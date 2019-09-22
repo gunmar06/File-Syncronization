@@ -13,21 +13,26 @@ s.close()
 
 class Server():
     def __init__(self):
-        self.ip = socket.gethostbyname(socket.gethostname())
-        self.port = 1001
+        self.ip = self.getIp()
+        self.port = 10011
         self.client_list = {}
         self.server_on = False
-        threading.Thread(target = self.setupSocket).start()
-        sleep(3)
-        threading.Thread(target = self.waitConnection).start()
+        self.setupSocket()
+        self.waitConnection()
+    def getIp(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
     def setupSocket(self):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.bind((self.ip, self.port))
             self.server_on = True
             self.socket.listen(5)
-        except PermissionError:
-            pass
+        except PermissionError as e:
+            print(e)
     def waitConnection(self):
         while self.server_on:
             rlist, _, _ = select.select([self.socket], [], [], 0.05)

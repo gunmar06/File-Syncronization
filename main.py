@@ -34,13 +34,12 @@ class SocketBufferGestionnary(threading.Thread):
         rlist, _, _ = select.select(self.connections, [], [], 0.05)
         for client in rlist:
             tmp_buffer = []
-            while self.in_buffer[-1][-1] != "\0".encode():
+            while tmp_buffer[-1][-1] != "\0".encode():
                 tmp_buffer.append(client.recv(self.transmission_buffer_size))
-            self.in_buffer.append("".encode())
-            for item in tmp_buffer:
-                self.in_buffer[-1] += item
-
-            self.in_buffer.append()
+            msg = SocketMessage("".encode(), client)
+            for chunck in tmp_buffer:
+                msg.message += chunck
+            self.in_buffer.append(msg)
     def __updateOutputBuffer(self):
         while len(self.out_buffer) > 0:
             if self.__isClientReadeable(self.out_buffer[0].client, self.connections):
@@ -113,7 +112,7 @@ class Client():
         self.port = 1001
         self.client_on = False
         self.searchServer()
-        self.sck_buff_g = SocketBufferGestionnary([socket])
+        self.sck_buff_g = SocketBufferGestionnary([self.socket])
         self.sck_buff_g.start()
     def getIp(self):
         try:
@@ -141,8 +140,6 @@ class Client():
                     ip_number = (ip_number + 1) % 256
         except AttributeError:
             pass
-            
-
             
 """
 if __name__ == "__main__":

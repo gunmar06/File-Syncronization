@@ -10,16 +10,6 @@ s.connect(("8.8.8.8", 80))
 print(s.getsockname()[0])
 s.close()
 """
-"""
-def segmentMessage(message):
-    msg_list = []
-    for i in range(len(message) % 50):
-        try:
-            msg_list.append(message[(i * 50):((i + 1) * 50]))]
-        except IndexError as e:
-            msg_list.append(message[(i * 50):)]
-    return msg_list
-"""
 
 class SocketMessage():
     def __init__(self, _message, _client):
@@ -53,12 +43,18 @@ class SocketBufferGestionnary(threading.Thread):
             self.in_buffer.append()
     def __updateOutputBuffer(self):
         while len(self.out_buffer) > 0:
-            if len(self.out_buffer[0].message) < 1024:
-                self.out_buffer[0].client.send(self.out_buffer[0].message)
-            else:
-                sgmt_msg = self.__segmentMessage(self.out_buffer[0].message)
-                for sgmt in sgmt_msg:
-                    self.out_buffer[0].client.send(sgmt)
+            if self.__isClientReadeable(self.out_buffer[0].client, self.connections):
+                if len(self.out_buffer[0].message) < 1024:
+                    self.out_buffer[0].client.send(self.out_buffer[0].message)
+                else:
+                    sgmt_msg = self.__segmentMessage(self.out_buffer[0].message)
+                    for sgmt in sgmt_msg:
+                        self.out_buffer[0].client.send(sgmt)
+    def __isClientReadeable(self, _client, _cnt_list):
+        _, wlist, _ = select.select([], _cnt_list, [], 0.05)
+        if _client in wlist:
+            return True
+        return False
     def __segmentMessage(self, message):
         msg_list = []
         for i in range((len(message) // self.transmission_buffer_size) + 1):

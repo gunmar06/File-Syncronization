@@ -11,6 +11,17 @@ print(s.getsockname()[0])
 s.close()
 """
 
+"""
+def segmentMessage(message):
+    msg_list = []
+    for i in range(len(message) % 50):
+        try:
+            msg_list.append(message[(i * 50):((i + 1) * 50]))]
+        except IndexError as e:
+            msg_list.append(message[(i * 50):)]
+    return msg_list
+"""
+
 class SocketMessage():
     def __init__(self, _message, _client):
         self.message = _message
@@ -23,20 +34,44 @@ class SocketBufferGestionnary(threading.Thread):
         self.transmission_buffer_size = 1024
         self.in_buffer = []
         self.out_buffer = []
+        self.update_frequency = 1/60
     def run(self):
         self.on = True
         while self.on == True:
             self.__updateInputBuffer()
             self.__updateOutputBuffer()
+            sleep(self.update_frequency)
     def __updateInputBuffer(self):
         rlist, _, _ = select.select(self.connections, [], [], 0.05)
         for client in rlist:
+            tmp_buffer = []
             while self.in_buffer[-1][-1] != "\0".encode():
-                self.in_buffer.append(client.recv(self.transmission_buffer_size))
+                tmp_buffer.append(client.recv(self.transmission_buffer_size))
+            self.in_buffer.append("".encode())
+            for item in tmp_buffer:
+                self.in_buffer[-1] += item
+
+            self.in_buffer.append()
     def __updateOutputBuffer(self):
         while len(self.out_buffer) > 0:
-            self.out_buffer[0].client.send(self.out_buffer[0].message)
-
+            if len(self.out_buffer[0].message) < 1024:
+                self.out_buffer[0].client.send(self.out_buffer[0].message)
+            else:
+                sgmt_msg = self.__segmentMessage(self.out_buffer[0].message)
+                for sgmt in sgmt_msg:
+                    self.out_buffer[0].client.send(sgmt)
+    def __segmentMessage(self, message):
+        msg_list = []
+        for i in range((len(message) // self.transmission_buffer_size) + 1):
+            try:
+                msg_list.append(message[(i * self.transmission_buffer_size):((i + 1) * self.transmission_buffer_size)])
+            except IndexError:
+                msg_list.append(message[(i * self.transmission_buffer_size):])
+        if len(msg_list[-1]) < self.transmission_buffer_size:
+            msg_list[-1] += "\0".encode()
+        else:
+            msg_list.append("\0".encode())
+        return msg_list
 
 class Server():
     def __init__(self):

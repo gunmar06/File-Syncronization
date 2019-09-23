@@ -112,8 +112,11 @@ class Client():
         self.port = 1001
         self.client_on = False
         self.searchServer()
-        self.sck_buff_g = SocketBufferGestionnary([self.socket])
-        self.sck_buff_g.start()
+        try:
+            self.sck_buff_g = SocketBufferGestionnary([self.socket])
+            self.sck_buff_g.start()
+        except AttributeError:
+            pass
     def getIp(self):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -150,5 +153,5 @@ if __name__ == "__main__":
         print("To start server write \"python3 main.py server\"")
         client = Client()
 """
-#server = Server()
+server = Server()
 client = Client()

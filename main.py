@@ -103,10 +103,21 @@ class Server():
 
 class Client():
     def __init__(self):
-        self.ip = socket.gethostbyname(socket.gethostname())
+        self.ip = self.getIp()
         self.port = 1001
         self.client_on = False
         self.searchServer()
+    def getIp(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except OSError as e:
+            print(e)
+            return None
+        
     def searchServer(self):
         ip_number = 0
         while self.client_on == False:
@@ -131,5 +142,5 @@ if __name__ == "__main__":
         print("To start server write \"python3 main.py server\"")
         client = Client()
 """
-server = Server()
-#client = Client()
+#server = Server()
+client = Client()

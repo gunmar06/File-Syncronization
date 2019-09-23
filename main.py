@@ -11,6 +11,33 @@ print(s.getsockname()[0])
 s.close()
 """
 
+class SocketMessage():
+    def __init__(self, _message, _client):
+        self.message = _message
+        self.client = _client
+
+class SocketBufferGestionnary(threading.Thread):
+    def __init__(self, _connections):
+        super().__init__()
+        self.connections = _connections
+        self.transmission_buffer_size = 1024
+        self.in_buffer = []
+        self.out_buffer = []
+    def run(self):
+        self.on = True
+        while self.on == True:
+            self.__updateInputBuffer()
+            self.__updateOutputBuffer()
+    def __updateInputBuffer(self):
+        rlist, _, _ = select.select(self.connections, [], [], 0.05)
+        for client in rlist:
+            while self.in_buffer[-1][-1] != "\0".encode():
+                self.in_buffer.append(client.recv(self.transmission_buffer_size))
+    def __updateOutputBuffer(self):
+        while len(self.out_buffer) > 0:
+            self.out_buffer[0].client.send(self.out_buffer[0].message)
+
+
 class Server():
     def __init__(self):
         self.ip = self.getIp()
